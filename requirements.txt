@@ -1,0 +1,8 @@
+# Dashboard TP Final BD - Liga de Basquet Formativo
+# Python 3.11 o superior + PostgreSQL 13 o superior
+streamlit>=1.50
+plotly>=6.0
+pandas>=2.2
+psycopg[binary]>=3.2
+scipy>=1.13
+statsmodels>=0.14
