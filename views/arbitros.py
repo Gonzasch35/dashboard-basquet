@@ -5,7 +5,17 @@ from lib.db import query
 from lib.liga import CATEGORIAS, partidos
 from lib.ui import COLOR_CAT, SECUENCIAL, SERIES, chart, encabezado, requiere_base
 
-encabezado("Árbitros y calendario", "Designaciones, asistencia y cómo se reparte la temporada en el calendario")
+encabezado("Árbitros y calendario", "Quién dirigió los partidos de 2026 y cuándo se jugaron",
+           """
+Cada partido lo dirigen **2 árbitros**: un principal y un auxiliar. Si uno falta, entra un **suplente**.
+Los árbitros tienen una categoría: **Nacional** (los más experimentados), **Provincial** o **Aspirante**
+(en formación, que solo dirigen a los más chicos: U13 y U15).
+
+- **Árbitros:** cuántos partidos dirigió cada uno y de qué categoría, y quiénes faltaron o llegaron tarde.
+- **Calendario:** el mapa de calor muestra cuántos partidos se jugaron en cada día y horario (más oscuro =
+  más partidos). Se juega viernes a la noche y sábados y domingos; los partidos postergados pasan a días
+  de semana, después del horario escolar.
+""")
 requiere_base()
 
 ap = query("""

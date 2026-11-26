@@ -1,4 +1,4 @@
-"""Dashboard de la Liga de Basquet Formativo de Parana - TP Final Base de Datos.
+"""Dashboard de la Liga de Basquet Formativo de Parana - temporada 2026.
 
 Correr con:   streamlit run app.py
 Integrantes:  Tomiozzo Franco y Schmidt Gonzalo
@@ -7,36 +7,34 @@ import streamlit as st
 
 from lib import db
 
-st.set_page_config(page_title="Liga de Básquet Formativo · TP Final BD", page_icon="🏀", layout="wide")
+st.set_page_config(page_title="Liga de Básquet Formativo 2026", page_icon="🏀", layout="wide",
+                   menu_items={"Get help": None, "Report a bug": None, "About": None})
 
 paginas = {
     "Presentación": [
         st.Page("views/inicio.py", title="Inicio", icon="🏀", default=True),
-        st.Page("views/modelo.py", title="Modelo de datos", icon="🗂️"),
+        st.Page("views/modelo.py", title="Cómo se guardan los datos", icon="🗂️"),
     ],
-    "La liga": [
+    "Temporada 2026": [
         st.Page("views/posiciones.py", title="Posiciones y playoff", icon="🏆"),
         st.Page("views/jugadores.py", title="Jugadores", icon="⛹️"),
         st.Page("views/arbitros.py", title="Árbitros y calendario", icon="🧑‍⚖️"),
     ],
-    "Consigna Parte 2": [
-        st.Page("views/consultas.py", title="Consultas complejas", icon="🔎"),
-        st.Page("views/algebra.py", title="Álgebra relacional", icon="🌳"),
+    "Análisis": [
         st.Page("views/controles.py", title="Controles de integridad", icon="✅"),
         st.Page("views/estadistica.py", title="Análisis estadístico", icon="📈"),
-    ],
-    "Código": [
-        st.Page("views/grafo.py", title="Grafo del código", icon="🕸️"),
     ],
 }
 nav = st.navigation(paginas)
 
 # ---------------------------------------------------------------- sidebar
 with st.sidebar:
+    st.markdown("### 🏀 Temporada **2026**")
+    st.caption("Todos los datos que se muestran son de la temporada 2026 (Apertura y Clausura).")
     cfg = db.get_config()
     ok, msg = db.ping()
-    st.markdown(f"**Base:** `{cfg['dbname']}` @ `{cfg['host']}:{cfg['port']}`")
-    st.markdown("🟢 Conectado" if ok else "🔴 Sin conexión")
+    st.markdown(("🟢 Conectado a la base" if ok else "🔴 Sin conexión a la base") +
+                f"  \n`{cfg['dbname']}` @ `{cfg['host']}:{cfg['port']}`")
     with st.expander("Conexión a PostgreSQL", expanded=not ok):
         with st.form("conexion"):
             host = st.text_input("Host", cfg["host"])
@@ -48,7 +46,7 @@ with st.sidebar:
                 st.session_state.pg = dict(host=host, port=int(port), dbname=dbname, user=user, password=password)
                 st.cache_data.clear()
                 st.rerun()
-        st.caption("Crea la base si no existe y corre `01_ddl` y `02_dml` de la carpeta *PARTE 2*.")
+        st.caption("Si la base no existe o está vacía, este botón la crea y carga los datos de 2026.")
         if st.button("Crear / recargar base", width="stretch"):
             barra = st.progress(0.0, "Arrancando…")
             try:

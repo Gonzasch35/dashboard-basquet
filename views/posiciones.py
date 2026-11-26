@@ -5,8 +5,19 @@ from lib.db import query
 from lib.liga import CATEGORIAS, TORNEOS, evolucion_posiciones, id_torneo, partidos, tabla_fiba
 from lib.ui import SERIES, chart, encabezado, requiere_base
 
-encabezado("Posiciones y playoff",
-           "Tabla con desempate FIBA calculada en Python (lo que en SQL puro queda muy engorroso)")
+encabezado("Posiciones y playoff", "Cómo terminó cada torneo de 2026: la tabla, cómo se fue armando y el playoff",
+           """
+Elegí un **torneo** (Apertura o Clausura) y una **categoría**.
+
+- **Tabla:** el ranking de la fase regular. Columnas: **pj** partidos jugados, **pg** ganados, **pp** perdidos,
+  **wo** veces que no se presentó, **pf** puntos (tantos) a favor, **pc** en contra, **dif** la diferencia y
+  **pts** los puntos de tabla (2 por ganar, 1 por perder, 0 por no presentarse). Si dos equipos empatan en
+  puntos, se mira primero cómo les fue en los partidos entre ellos (regla de la FIBA, la federación
+  internacional) y después la diferencia general. Los 8 primeros pasan al playoff.
+- **Evolución por fecha:** en qué puesto estaba cada equipo después de cada fecha. Arriba es mejor.
+- **Playoff:** los cruces de cuartos y semis (al mejor de 3) y la final.
+- **Resultados:** todos los partidos de una fecha.
+""")
 requiere_base()
 
 f1, f2 = st.columns(2)

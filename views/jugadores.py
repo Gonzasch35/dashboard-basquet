@@ -5,7 +5,19 @@ import streamlit as st
 from lib.liga import CATEGORIAS, estadisticas_jugadores
 from lib.ui import COLOR_CAT, SERIES, chart, encabezado, requiere_base
 
-encabezado("Jugadores", "Líderes, perfiles y planilla partido a partido")
+encabezado("Jugadores", "Quiénes se destacaron en 2026 y cómo le fue a cada uno partido a partido",
+           """
+De cada partido se guarda la **planilla** de cada jugador: minutos jugados, tiros convertidos (**libres** valen
+1 punto, **dobles** 2 y **triples** 3), puntos, **rebotes** (agarrar la pelota después de un tiro errado),
+**asistencias** (el pase que termina en una canasta) y faltas.
+
+- **Líderes:** los 15 mejores de la temporada en la estadística que elijas (solo jugadores con 10 partidos o más).
+- **Perfil de jugador:** buscá a cualquier jugador y mirá sus números partido a partido. La línea punteada
+  es el promedio de su categoría, para comparar.
+- **Cómo se anota:** qué parte de los puntos sale de cada tipo de tiro, según la edad.
+
+Con los botones de arriba podés filtrar por categoría.
+""")
 requiere_base()
 
 e = estadisticas_jugadores()

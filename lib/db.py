@@ -15,23 +15,12 @@ from psycopg.conninfo import make_conninfo
 from psycopg.types.numeric import FloatLoader
 
 APP_DIR = Path(__file__).resolve().parent.parent
-TP_DIR = APP_DIR.parent
-PARTE2_DIR = TP_DIR / "PARTE 2"
 SQL_DIR = APP_DIR / "sql"
 
-
-def _sql_parte2(nombre: str) -> Path:
-    """Usa el original de 'PARTE 2' si esta al lado (carpeta del TP);
-    si no (repo clonado solo con el dashboard), la copia de sql/."""
-    original = PARTE2_DIR / nombre
-    return original if original.exists() else SQL_DIR / nombre
-
-
-DDL_FILE = _sql_parte2("01_ddl_liga_basquet.sql")
-DML_FILE = _sql_parte2("02_dml_carga_datos.sql")
-CONTROLES_FILE = _sql_parte2("03_controles.sql")
-COMPLEJAS_FILE = SQL_DIR / "04_consultas_complejas.sql"
-ALGEBRA_FILE = SQL_DIR / "05_algebra_relacional.sql"
+# version final de los scripts (con id_categoria en plantel, pase y partido)
+DDL_FILE = SQL_DIR / "01_ddl_liga_basquet.sql"
+DML_FILE = SQL_DIR / "02_dml_carga_datos.sql"
+CONTROLES_FILE = SQL_DIR / "03_controles.sql"
 
 TABLAS = ["club", "categoria", "jugador", "arbitro", "entrenador", "cancha", "equipo",
           "torneo", "plantel", "pase", "serie", "partido", "arbitro_partido", "estadistica"]
@@ -132,21 +121,8 @@ def run_in_rollback(statements: list[str], check_sql: str | None = None) -> dict
     return out
 
 
-def explain(sql: str) -> tuple[str, float]:
-    """EXPLAIN ANALYZE de un select: (plan en texto, tiempo de ejecucion en ms)."""
-    with connect() as conn:
-        rows = conn.execute("explain (analyze, buffers off) " + sql).fetchall()
-        conn.rollback()
-    plan = "\n".join(r[0] for r in rows)
-    ms = 0.0
-    for r in rows:
-        if r[0].startswith("Execution Time"):
-            ms = float(r[0].split(":")[1].split()[0])
-    return plan, ms
-
-
 def crear_y_cargar(progress=None) -> None:
-    """Crea la base si no existe y corre 01 (DDL) y 02 (poblado) de la Parte 2."""
+    """Crea la base si no existe y corre sql/01 (DDL) y sql/02 (poblado)."""
     cfg = get_config()
     with connect(dbname="postgres", autocommit=True) as conn:
         existe = conn.execute("select 1 from pg_database where datname = %s", (cfg["dbname"],)).fetchone()
