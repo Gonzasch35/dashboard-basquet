@@ -1,77 +1,86 @@
-# Dashboard · Liga de Básquet Formativo de Paraná
+# Dashboard · Liga de Básquet Formativo de Paraná (temporada 2026)
 
-Interfaz de acceso a datos del **TP Final de Base de Datos – Parte 2** (consigna, punto 4).
+Un tablero web para recorrer la **temporada 2026** de una liga de básquet juvenil de Paraná, guardada en una
+base de datos PostgreSQL. Es la interfaz de acceso a datos del TP Final de Base de Datos (Parte 2).
 Integrantes: Tomiozzo Franco y Schmidt Gonzalo.
 
-Hecha en **Python** con Streamlit (interfaz), Plotly (gráficos), psycopg 3 (conexión a PostgreSQL)
-y SciPy / statsmodels (tests estadísticos).
+## ¿De qué se trata?
+
+La liga tiene 12 clubes y cada uno tiene 4 equipos, uno por edad: **U13** (11 y 12 años), **U15**, **U17**
+y **U19** ("U" viene de *under*, "menor que"). En 2026 cada categoría jugó dos torneos, el **Apertura** y el
+**Clausura**: primero todos contra todos, y los 8 mejores pasan al **playoff** (cuartos, semifinal y final).
+
+Todo eso (jugadores, partidos, resultados, árbitros y la planilla de cada jugador en cada partido) está
+guardado en una base de datos de 14 tablas. Los nombres de los clubes son reales; el resto de los datos es
+inventado por un programa, respetando las reglas de la liga. **Todos los datos son de la temporada 2026.**
+
+## Qué muestra
+
+| Página | Qué muestra |
+|---|---|
+| Inicio | Qué es la liga, un glosario, los números de la temporada y los campeones |
+| Cómo se guardan los datos | El diagrama de tablas y las reglas de cada tabla |
+| Posiciones y playoff | La tabla de cada torneo (con desempate FIBA), cómo cambió fecha a fecha y el playoff |
+| Jugadores | Los líderes, el perfil de cada jugador partido a partido y de qué tiro salen los puntos |
+| Árbitros y calendario | Cuántos partidos dirigió cada árbitro, las ausencias y los días y horarios de juego |
+| Análisis estadístico | Cinco preguntas sobre la temporada respondidas con pruebas estadísticas |
+
+Cada página tiene un recuadro **ℹ️ ¿Qué estoy viendo?** que explica qué muestra y cómo leerla.
 
 ## Requisitos
 
 - Python 3.11 o superior
 - PostgreSQL 13 o superior (probado con PostgreSQL 15)
-- Los módulos de `requirements.txt`
+- Los módulos de `requirements.txt`: Streamlit (la página web), psycopg (conexión a PostgreSQL),
+  pandas (tablas), Plotly (gráficos), SciPy y statsmodels (pruebas estadísticas)
 
 ## Cómo correrlo
 
 ```bash
-cd app-dashboard
 python -m venv .venv
 .venv\Scripts\activate          # en Linux/Mac: source .venv/bin/activate
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Se abre en <http://localhost:8501>.
+Se abre en el navegador en <http://localhost:8501>.
 
 ### Conexión a la base
 
-Tres formas (la primera que encuentre):
+Tres formas (se usa la primera que encuentre):
 
 1. Copiar `.streamlit/secrets.toml.example` como `.streamlit/secrets.toml` y completar la contraseña.
 2. Variables de entorno `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`.
 3. Desde la barra lateral del dashboard (**Conexión a PostgreSQL**).
 
-Si la base `liga_basquet` no existe o está vacía, el botón **Crear / recargar base** la crea y corre
-`sql/01_ddl_liga_basquet.sql` y `sql/02_dml_carga_datos.sql` (tarda menos de un segundo).
-
-> Los `01`, `02` y `03` de `sql/` son copias de la carpeta `PARTE 2` del TP. Si el dashboard está dentro de la
-> carpeta del TP (con `PARTE 2` al lado), usa los originales de ahí; si no, usa estas copias.
-
-## Qué hay en cada página
-
-| Página | Qué muestra | Consigna |
-|---|---|---|
-| Inicio | Números de la temporada, campeones, filas por tabla, mapa de la consigna | — |
-| Modelo de datos | Diagrama de tablas generado desde las FK del catálogo, todas las PK/FK/UNIQUE/CHECK | Parte 1 |
-| Posiciones y playoff | Tabla con desempate FIBA (calculado en Python), evolución fecha a fecha, cuadro del playoff | 4 |
-| Jugadores | Líderes, perfil y planilla de cada jugador, de dónde salen los puntos por categoría | 4 |
-| Árbitros y calendario | Designaciones, asistencia, mapa de calor día/horario | 4 |
-| Consultas complejas | Corre `sql/04_consultas_complejas.sql` (Q1–Q8) + consulta libre de solo lectura | 2 |
-| Álgebra relacional | Árbol inicial y optimizado con filas reales, A1 vs A2 y `EXPLAIN ANALYZE` | 3 |
-| Controles de integridad | Corre C1–C30 de `03_controles.sql`; demo de datos truchos con `rollback` | 1 |
-| Análisis estadístico | Test binomial (ventaja de local), ANOVA + Tukey, Pearson/regresión, χ², Spearman | 4 |
-| Grafo del código | Grafo de graphify del DDL y de `generar_datos.py` (no está en el repo: se genera local con graphify en `graphify-out/`) | — |
-
-El dashboard **lee los .sql del TP tal cual** (separa cada consulta por su encabezado `-- C1)`, `-- Q1)`, etc.):
-si se modifica un archivo, el dashboard muestra la versión nueva.
+Si la base `liga_basquet` no existe o está vacía, el botón **Crear / recargar base** la crea y carga los
+datos de 2026 (corre `sql/01_ddl_liga_basquet.sql` y `sql/02_dml_carga_datos.sql`; tarda menos de un segundo).
 
 ## Archivos
 
 ```
 app-dashboard/
-├── app.py                      # punto de entrada y barra lateral
+├── app.py                      # punto de entrada, menú y barra lateral
+├── assets/
+│   └── diagrama_tablas.png     # diagrama de tablas
 ├── lib/
-│   ├── db.py                   # conexión, consultas cacheadas, carga de scripts, rollback
-│   ├── liga.py                 # consultas compartidas + tabla FIBA
-│   ├── sqlfiles.py             # separa los .sql en bloques
-│   └── ui.py                   # paleta de colores y plantilla de gráficos
+│   ├── db.py                   # conexión, consultas y carga de la base
+│   ├── liga.py                 # consultas de la liga y tabla con desempate FIBA
+│   ├── sqlfiles.py             # separa 03_controles.sql en bloques (C1, C2, … E1, …)
+│   └── ui.py                   # colores, gráficos y encabezado de cada página
 ├── views/                      # una página por archivo
 ├── sql/
-│   ├── 01_ddl_liga_basquet.sql      # copia de PARTE 2: crea las 14 tablas
-│   ├── 02_dml_carga_datos.sql       # copia de PARTE 2: poblado (generado por generar_datos.py)
-│   ├── 03_controles.sql             # copia de PARTE 2: controles C1-C30
-│   ├── 04_consultas_complejas.sql   # las 6 consultas complejas (+2)
+│   ├── 01_ddl_liga_basquet.sql      # crea las 14 tablas (versión final, con id_categoria en plantel/pase/partido)
+│   ├── 02_dml_carga_datos.sql       # datos de la temporada 2026
+│   ├── 03_controles.sql             # controles de las reglas de la liga
+│   ├── 04_consultas_complejas.sql   # consultas complejas (Q1 a Q8)
 │   └── 05_algebra_relacional.sql    # consulta original y optimizada
 └── requirements.txt
 ```
+
+Los `.sql` 01 a 03 son la **versión final** de la Parte 2: `plantel`, `pase` y `partido` guardan
+`id_categoria` y sus FK compuestas a *(equipo, categoría)* y *(torneo, categoría)* hacen que el DDL frene lo que
+antes revisaban los controles C3, C6 y C9 (quedan como doble chequeo). Además hay un índice único parcial
+(`uq_partido_final`) que permite una sola final por torneo. La página **Controles de integridad** corre los
+controles de `03_controles.sql` y muestra cómo la base rechaza datos truchos (siempre con rollback).
+Las consultas complejas y el álgebra relacional se explican en el informe del TP, no en el dashboard.

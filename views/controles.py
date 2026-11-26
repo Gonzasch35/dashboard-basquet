@@ -13,7 +13,15 @@ from lib.sqlfiles import leer_bloques
 from lib.ui import encabezado, requiere_base
 
 encabezado("Controles de integridad",
-           "PARTE 2/03_controles.sql · cada control busca las filas que ROMPEN una regla: 0 filas = la regla se cumple")
+           "sql/03_controles.sql · cada control busca las filas que ROMPEN una regla: 0 filas = la regla se cumple",
+           """
+Hay reglas que la base hace cumplir sola (PK, FK, UNIQUE, CHECK) y otras que miran varias filas o
+varias tablas a la vez: esas las revisa un **control**, una consulta que busca los datos que rompen la regla.
+Si el control devuelve **0 filas**, la regla se cumple.
+
+En la versión final, **C3, C6 y C9** (equipo, torneo y pase de la misma categoría) ya los frena el DDL con
+FK compuestas que comparten `id_categoria`; se dejan como doble chequeo y tienen que dar siempre 0 filas.
+""")
 requiere_base()
 
 bloques = leer_bloques(CONTROLES_FILE)
@@ -94,6 +102,20 @@ FRENADOS_POR_DDL = {
         "update pase set id_equipo_destino = id_equipo_origen where id_pase = (select min(id_pase) from pase)",
     "Borrar un club que tiene equipos":
         "delete from club where id_club = 1",
+    "Meter un equipo U15 en un partido del torneo U13 (FK compuesta con categoría, ex C9)":
+        "update partido set id_equipo_visitante = (select min(id_equipo) from equipo where id_categoria = 2) "
+        "where id_partido = (select min(id_partido) from partido where id_categoria = 1)",
+    "Anotar un jugador de un equipo U15 en el torneo U17 (FK compuesta con categoría, ex C3)":
+        "insert into plantel (id_equipo, dni_jugador, id_torneo, id_categoria, numero_camiseta) "
+        "select pl.id_equipo, pl.dni_jugador, (select min(id_torneo) from torneo where id_categoria = 3), 2, 4 "
+        "from plantel pl where pl.id_categoria = 2 limit 1",
+    "Un pase de un equipo U13 a uno U15 (FK compuesta con categoría, ex C6)":
+        "update pase set id_equipo_destino = (select min(id_equipo) from equipo where id_categoria = 2) "
+        "where id_pase = (select min(id_pase) from pase where id_categoria = 1)",
+    "Cargar una segunda final en el mismo torneo (índice único parcial)":
+        "insert into partido (id_torneo, id_categoria, fase, fecha, hora, id_cancha, id_equipo_local, id_equipo_visitante) "
+        "select id_torneo, id_categoria, 'Final', fecha + 7, hora, id_cancha, id_equipo_local, id_equipo_visitante "
+        "from partido where fase = 'Final' limit 1",
     "Un jugador de 2,50 m":
         "update jugador set altura_cm = 250 where dni_jugador = (select min(dni_jugador) from jugador)",
 }

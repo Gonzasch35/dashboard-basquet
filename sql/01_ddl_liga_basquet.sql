@@ -139,7 +139,9 @@ create table equipo (
     constraint fk_equipo_categoria foreign key (id_categoria) references categoria(id_categoria),
     constraint fk_equipo_entrenador foreign key (dni_entrenador, id_club)
         references entrenador(dni_entrenador, id_club),
-    constraint uq_equipo_club_categoria unique (id_club, id_categoria)  -- un equipo por categoria en cada club
+    constraint uq_equipo_club_categoria unique (id_club, id_categoria),  -- un equipo por categoria en cada club
+    -- lo usan las FK compuestas de plantel, pase y partido (equipo + categoria)
+    constraint uq_equipo_categoria unique (id_equipo, id_categoria)
 );
 
 -- Apertura y Clausura de cada temporada, uno por categoria
@@ -153,6 +155,8 @@ create table torneo (
     constraint pk_torneo primary key (id_torneo),
     constraint fk_torneo_categoria foreign key (id_categoria) references categoria(id_categoria),
     constraint uq_torneo unique (nombre, temporada, id_categoria),
+    -- lo usan las FK compuestas de plantel y partido (torneo + categoria)
+    constraint uq_torneo_categoria unique (id_torneo, id_categoria),
     constraint ck_torneo_nombre check (nombre in ('Apertura', 'Clausura')),
     constraint ck_torneo_fechas check (fecha_fin >= fecha_inicio)
 );
@@ -164,15 +168,19 @@ create table torneo (
 
 -- relacion N:M entre jugador y equipo, POR TORNEO: asi un jugador puede
 -- estar en un club en el Apertura y en otro en el Clausura (pase)
+-- id_categoria: el equipo y el torneo tienen que ser de la MISMA categoria.
+-- Como las dos FK compuestas usan la misma columna, no se puede cargar un
+-- equipo U15 en un torneo U17 (antes lo revisaba el control C3)
 create table plantel (
     id_equipo int,
     dni_jugador int,
     id_torneo int,
+    id_categoria int not null,
     numero_camiseta int not null,
     constraint pk_plantel primary key (id_equipo, dni_jugador, id_torneo),
-    constraint fk_plantel_equipo foreign key (id_equipo) references equipo(id_equipo),
+    constraint fk_plantel_equipo foreign key (id_equipo, id_categoria) references equipo(id_equipo, id_categoria),
     constraint fk_plantel_jugador foreign key (dni_jugador) references jugador(dni_jugador),
-    constraint fk_plantel_torneo foreign key (id_torneo) references torneo(id_torneo),
+    constraint fk_plantel_torneo foreign key (id_torneo, id_categoria) references torneo(id_torneo, id_categoria),
     constraint uq_plantel_jugador unique (dni_jugador, id_torneo),   -- en un torneo, un solo equipo
     constraint uq_plantel_camiseta unique (id_equipo, id_torneo, numero_camiseta),
     constraint ck_plantel_camiseta check (numero_camiseta between 4 and 19)
@@ -180,17 +188,20 @@ create table plantel (
 
 -- registro de los pases (se hacen entre el Apertura y el Clausura).
 -- son intercambios: si un equipo recibe uno, entrega otro y siguen con 16
+-- id_categoria: origen y destino son de la misma categoria, con la misma
+-- tecnica de FK compuesta (antes lo revisaba el control C6)
 create table pase (
     id_pase serial,
     dni_jugador int not null,
     id_equipo_origen int not null,
     id_equipo_destino int not null,
+    id_categoria int not null,
     temporada int not null,
     fecha_pase date not null,
     constraint pk_pase primary key (id_pase),
     constraint fk_pase_jugador foreign key (dni_jugador) references jugador(dni_jugador),
-    constraint fk_pase_origen foreign key (id_equipo_origen) references equipo(id_equipo),
-    constraint fk_pase_destino foreign key (id_equipo_destino) references equipo(id_equipo),
+    constraint fk_pase_origen foreign key (id_equipo_origen, id_categoria) references equipo(id_equipo, id_categoria),
+    constraint fk_pase_destino foreign key (id_equipo_destino, id_categoria) references equipo(id_equipo, id_categoria),
     constraint uq_pase unique (dni_jugador, temporada),               -- un pase por temporada
     constraint ck_pase_equipos check (id_equipo_origen <> id_equipo_destino)
 );
@@ -220,9 +231,12 @@ create table serie (
                                        or id_equipo_ganador in (id_equipo_mejor, id_equipo_peor))
 );
 
+-- id_categoria: local, visitante y torneo de la misma categoria
+-- (antes lo revisaba el control C9)
 create table partido (
     id_partido serial,
     id_torneo int not null,
+    id_categoria int not null,
     fase varchar(15) not null,
     nro_fecha int,                    -- solo fase regular (1 a 11)
     id_serie int,                     -- solo cuartos y semis
@@ -239,12 +253,12 @@ create table partido (
     hora_original time,
     motivo_postergacion varchar(100),
     constraint pk_partido primary key (id_partido),
-    constraint fk_partido_torneo foreign key (id_torneo) references torneo(id_torneo),
+    constraint fk_partido_torneo foreign key (id_torneo, id_categoria) references torneo(id_torneo, id_categoria),
     -- la serie tiene que ser del mismo torneo que el partido
     constraint fk_partido_serie foreign key (id_serie, id_torneo) references serie(id_serie, id_torneo),
     constraint fk_partido_cancha foreign key (id_cancha) references cancha(id_cancha),
-    constraint fk_partido_local foreign key (id_equipo_local) references equipo(id_equipo),
-    constraint fk_partido_visitante foreign key (id_equipo_visitante) references equipo(id_equipo),
+    constraint fk_partido_local foreign key (id_equipo_local, id_categoria) references equipo(id_equipo, id_categoria),
+    constraint fk_partido_visitante foreign key (id_equipo_visitante, id_categoria) references equipo(id_equipo, id_categoria),
     constraint fk_partido_ausente foreign key (id_equipo_ausente) references equipo(id_equipo),
     constraint uq_partido_torneo unique (id_partido, id_torneo),        -- lo usa la FK compuesta de estadistica
     constraint uq_partido_cancha_horario unique (id_cancha, fecha, hora), -- una cancha, un partido a la vez
@@ -285,6 +299,9 @@ create table partido (
      or (fase = 'Regular' and id_equipo_ausente = id_equipo_visitante and puntos_local = 20 and puntos_visitante = 0)
     )
 );
+
+-- una sola final por torneo: indice unico PARCIAL (solo mira las filas con fase = 'Final')
+create unique index uq_partido_final on partido (id_torneo) where fase = 'Final';
 
 -- arbitros de cada partido: un principal, un auxiliar y, si falta uno, un suplente
 create table arbitro_partido (

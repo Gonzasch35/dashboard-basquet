@@ -38,7 +38,7 @@ def partidos(id_torneo: int | None = None) -> pd.DataFrame:
                p.fecha_original, p.motivo_postergacion
         from partido p
         join torneo t on t.id_torneo = p.id_torneo
-        join categoria ca on ca.id_categoria = t.id_categoria
+        join categoria ca on ca.id_categoria = p.id_categoria  -- partido ya guarda su categoria
         join cancha c on c.id_cancha = p.id_cancha
         join equipo l on l.id_equipo = p.id_equipo_local
         join club cl on cl.id_club = l.id_club

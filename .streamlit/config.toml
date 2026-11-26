@@ -5,6 +5,10 @@ backgroundColor = "#fcfcfb"
 secondaryBackgroundColor = "#f3f2ee"
 textColor = "#0b0b0b"
 
+[client]
+# sin el menu de arriba a la derecha ni el boton Deploy
+toolbarMode = "minimal"
+
 [server]
 headless = true
 

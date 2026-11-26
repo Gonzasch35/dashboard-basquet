@@ -62,7 +62,9 @@ order by ca.nombre, j.apellido;
 
 -- Q3) Equipos que ganaron TODOS los partidos que jugaron de local en la
 --     fase regular de un torneo ("invictos en casa")
--- Usa: not exists (no existe un partido de local que hayan perdido)
+--     (tiene que haber jugado al menos uno de local: si no, "no perdio
+--     ninguno" se cumpliria sin haber jugado)
+-- Usa: exists + not exists (jugo de local y no existe uno que haya perdido)
 select t.nombre as torneo, ca.nombre as categoria, eq.nombre as equipo,
        (select count(*) from partido p
          where p.id_torneo = t.id_torneo and p.fase = 'Regular'
@@ -70,7 +72,11 @@ select t.nombre as torneo, ca.nombre as categoria, eq.nombre as equipo,
 from equipo eq
 join torneo t on t.id_categoria = eq.id_categoria
 join categoria ca on ca.id_categoria = t.id_categoria
-where not exists (select 1 from partido p
+where exists (select 1 from partido p
+              where p.id_torneo = t.id_torneo
+                and p.fase = 'Regular'
+                and p.id_equipo_local = eq.id_equipo)
+  and not exists (select 1 from partido p
                   where p.id_torneo = t.id_torneo
                     and p.fase = 'Regular'
                     and p.id_equipo_local = eq.id_equipo

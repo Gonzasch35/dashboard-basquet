@@ -33,6 +33,8 @@ group by eq.nombre, t.nombre
 having count(pl.dni_jugador) <> 16;
 
 -- C3) el plantel es de la categoria del torneo (un equipo U15 no puede estar en un torneo U17)
+--     Ahora lo FRENA el DDL (fk_plantel_equipo y fk_plantel_torneo comparten id_categoria).
+--     Se deja como doble chequeo: tiene que dar 0 filas siempre.
 select pl.id_equipo, pl.dni_jugador, pl.id_torneo
 from plantel pl, equipo eq, torneo t
 where pl.id_equipo = eq.id_equipo
@@ -62,6 +64,8 @@ where not exists (select 1
                     and pb.id_equipo_destino = pa.id_equipo_origen);
 
 -- C6) los pases son entre equipos de la misma categoria
+--     Ahora lo FRENA el DDL (fk_pase_origen y fk_pase_destino comparten id_categoria).
+--     Se deja como doble chequeo: tiene que dar 0 filas siempre.
 select pa.dni_jugador
 from pase pa, equipo eo, equipo ed
 where pa.id_equipo_origen = eo.id_equipo
@@ -95,6 +99,8 @@ where pa.dni_jugador = pc.dni_jugador
 -- ---------------------------------------------------------------------
 
 -- C9) los dos equipos del partido son de la categoria del torneo
+--     Ahora lo FRENA el DDL (fk_partido_torneo, fk_partido_local y fk_partido_visitante
+--     comparten id_categoria). Se deja como doble chequeo: tiene que dar 0 filas siempre.
 select p.id_partido
 from partido p, torneo t, equipo l, equipo v
 where p.id_torneo = t.id_torneo

@@ -53,14 +53,12 @@ def requiere_base() -> None:
         st.stop()
 
 
-def encabezado(titulo: str, bajada: str = "", consigna: str = "") -> None:
+def encabezado(titulo: str, bajada: str = "", ayuda: str = "") -> None:
+    """Titulo de la pagina + aviso de que los datos son de 2026 + ayuda para quien no conoce el tema."""
     st.title(titulo)
+    st.badge("Datos de la temporada 2026", icon="📅", color="blue")
     if bajada:
         st.caption(bajada)
-    if consigna:
-        st.info(f"**Consigna:** {consigna}", icon="📌")
-
-
-def ver_sql(sql: str, titulo: str = "Ver SQL") -> None:
-    with st.expander(titulo):
-        st.code(sql, language="sql")
+    if ayuda:
+        with st.expander("ℹ️ ¿Qué estoy viendo?"):
+            st.markdown(ayuda)
