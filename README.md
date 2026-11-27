@@ -75,7 +75,7 @@ Los datos y las consultas no cambian: es solo cómo se ven.
 app-dashboard/
 ├── app.py                      # punto de entrada, menú y barra lateral
 ├── assets/
-│   └── diagrama.png            # diagrama de tablas (versión final, con id_categoria)
+│   └── Tablas_liga_basquet_parte2.drawio.svg  # diagrama de tablas (export de draw.io, versión final)
 ├── lib/
 │   ├── db.py                   # conexión, consultas y carga de la base
 │   ├── liga.py                 # consultas de la liga y tabla con desempate FIBA

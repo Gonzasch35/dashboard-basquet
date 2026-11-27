@@ -1,4 +1,6 @@
 """Como esta armada la base: el diagrama de tablas y las reglas de cada tabla."""
+import re
+
 import streamlit as st
 
 from lib.db import APP_DIR, TABLAS, query
@@ -28,7 +30,33 @@ En el diagrama, esas conexiones son las **flechas**.
 requiere_base()
 
 st.subheader("Diagrama de tablas")
-st.image(str(APP_DIR / "assets" / "diagrama.png"), width="stretch")
+DIAGRAMA = APP_DIR / "assets" / "Tablas_liga_basquet_parte2.drawio.svg"
+# zona donde esta el dibujo dentro del lienzo de 1901 x 1901 que exporta draw.io (x, y, ancho, alto):
+# el resto es espacio vacio. Si se vuelve a exportar con otra disposicion, hay que ajustarlo.
+RECORTE = (0, 40, 1650, 1266)
+
+
+@st.cache_data(show_spinner=False)
+def diagrama_svg(ruta: str, modificado: float) -> str:
+    """El SVG tal cual se exporto, preparado para mostrarlo en el tablero (el archivo no se toca):
+    - modo oscuro siempre (el export sigue el tema de la compu: en una compu en modo claro saldria blanco)
+      y fondo transparente para que se funda con la pagina;
+    - recortado al dibujo (sin el espacio vacio de abajo);
+    - sin las copias PNG de respaldo que mete draw.io (solo las usan navegadores muy viejos) ni el XML
+      editable de draw.io: pesa mucho menos y carga al toque."""
+    svg = open(ruta, encoding="utf-8").read()
+    x, y, w, h = RECORTE
+    svg = re.sub(r'<image\b[^>]*/>', "", svg)  # respaldos PNG dentro de <switch>
+    raiz = re.search(r"<svg\b[^>]*>", svg).group(0)
+    nueva = re.sub(r'\scontent="[^"]*"', "", raiz)
+    nueva = re.sub(r'style="[^"]*"', 'style="background: transparent; color-scheme: dark;"', nueva, count=1)
+    nueva = re.sub(r'width="[^"]*"', f'width="{w}px"', nueva, count=1)
+    nueva = re.sub(r'height="[^"]*"', f'height="{h}px"', nueva, count=1)
+    nueva = re.sub(r'viewBox="[^"]*"', f'viewBox="{x} {y} {w} {h}"', nueva, count=1)
+    return svg.replace(raiz, nueva, 1)
+
+
+st.image(diagrama_svg(str(DIAGRAMA), DIAGRAMA.stat().st_mtime), width="stretch")
 st.caption("Cada caja es una tabla con sus columnas y su tipo de dato (INT = número entero, VARCHAR = texto, "
            "DATE = fecha, TIME = hora, SERIAL = número que la base pone sola). Las flechas van desde la FK "
            "hasta la tabla a la que apunta.")
