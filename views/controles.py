@@ -3,6 +3,8 @@
 Todo lo que "rompe" datos corre dentro de una transaccion que se deshace
 (rollback): la base queda exactamente igual.
 """
+import html
+import re
 import time
 
 import pandas as pd
@@ -157,38 +159,174 @@ DETECTADOS_POR_CONTROL = {
         "C14", f"delete from estadistica where id_partido = {UNO_NORMAL}"),
 }
 
+# ---- piezas para que la demo se entienda: que paso, por que, y prueba de que la base quedo igual
+TIPO_ERROR = {  # SQLSTATE -> (nombre de la regla, explicacion en criollo)
+    "23514": ("CHECK", "El dato no cumple una condición escrita en la propia tabla (un rango o una regla sobre el valor)."),
+    "23503": ("FK · clave foránea", "El dato apunta a algo que no existe o que no le corresponde, o se quiso borrar "
+                                    "algo que otras filas todavía usan."),
+    "23505": ("UNIQUE · no se repite", "Ese valor ya está cargado y la regla dice que no puede haber dos iguales."),
+    "23502": ("NOT NULL", "Falta un dato obligatorio."),
+}
+
+
+def tabla_de(sql: str) -> str | None:
+    """La tabla que toca la sentencia (update x / insert into x / delete from x)."""
+    m = re.match(r"\s*(?:update|insert\s+into|delete\s+from)\s+(\w+)", sql, re.I)
+    return m.group(1) if m else None
+
+
+def definicion(nombre: str | None) -> str | None:
+    """Como esta escrita la regla en la base (constraint o indice unico parcial)."""
+    if not nombre:
+        return None
+    d = query("select pg_get_constraintdef(oid) as d from pg_constraint where conname = %s limit 1", (nombre,))
+    if len(d):
+        return d.d.iloc[0]
+    d = query("select indexdef as d from pg_indexes where indexname = %s limit 1", (nombre,))
+    return d.d.iloc[0] if len(d) else None
+
+
+def tarjeta(clase: str, icono: str, titulo: str, que: str, chips: list[tuple[str, bool]],
+            regla_titulo: str = "", regla: str | None = None, tabla: str | None = None, r: dict | None = None):
+    chips_html = "".join(f'<span class="chip{" fuerte" if f else ""}">{html.escape(c)}</span>' for c, f in chips)
+    regla_html = (f'<div class="regla">{html.escape(regla_titulo)}</div><code class="def">{html.escape(regla)}</code>'
+                  if regla else "")
+    igual = ""
+    if tabla and r and r["antes"] is not None:
+        igual = (f'<div class="igual">↩️ Rollback hecho · <code>{html.escape(tabla)}</code> tenía <b>{miles(r["antes"])}</b> '
+                 f'filas y sigue con <b>{miles(r["despues"])}</b>: la base quedó exactamente igual.</div>')
+    st.markdown(f'<div class="resultado {clase}"><div class="icono">{icono}</div>'
+                f'<div class="titulo">{titulo}</div><div class="que">{html.escape(que)}</div>'
+                f'<div class="chips">{chips_html}</div>{regla_html}{igual}</div>', unsafe_allow_html=True)
+
+
+def paso(status, texto: str, pausa: float = 0.45):
+    """Una linea del paso a paso, con una pausa corta para que se pueda seguir en vivo."""
+    status.write(texto)
+    time.sleep(pausa)
+
+
+def miles(n: int) -> str:
+    return f"{int(n):,}".replace(",", ".")
+
+
+def marcador(lugar, clave: str, total: int, verbo: str):
+    """Se dibuja al final (en un st.empty de arriba) para que ya cuente el intento recien hecho."""
+    hechos = len(st.session_state.get(clave, set()))
+    lugar.markdown(f'<div class="marcador"><span>Probaste <b>{hechos}</b> de <b>{total}</b> · {verbo}</span>'
+                f'<div class="barra"><span style="width:{100 * hechos / total:.0f}%"></span></div></div>',
+                unsafe_allow_html=True)
+
+
+def anotar(clave: str, caso: str, total: int, mensaje: str):
+    probados = st.session_state.setdefault(clave, set())
+    nuevo = caso not in probados
+    probados.add(caso)
+    if nuevo and len(probados) == total:
+        st.balloons()
+        st.toast(mensaje, icon="🏆")
+
+
+def mostrar_ddl(caso: str, r: dict, tabla: str | None):
+    if r["ok"]:
+        tarjeta("alerta", "⚠️", "No saltó ninguna restricción",
+                f"La sentencia afectó {r['rowcount']} fila(s) y no hubo error (igual se deshizo).", [], tabla=tabla, r=r)
+        return
+    tipo, explica = TIPO_ERROR.get(r["sqlstate"], ("Restricción", "La base no aceptó el dato."))
+    tarjeta("", "🛡️", f"¡Rechazado! La base frenó <b>{html.escape(caso.lower())}</b>", explica,
+            [(r["constraint"] or "—", True), (tipo, False), (f"SQLSTATE {r['sqlstate']}", False)],
+            "La regla, tal como está escrita en la base:", definicion(r["constraint"]), tabla, r)
+    with st.expander("Ver el mensaje original de PostgreSQL"):
+        st.code(r["error"], language="text")
+
+
+def mostrar_control(cod: str, r: dict, tabla: str | None):
+    if not r["ok"]:
+        tarjeta("alerta", "⚠️", "La sentencia dio error", r["error"].splitlines()[0], [], tabla=tabla, r=r)
+        return
+    n = 0 if r["check"] is None else len(r["check"])
+    if n:
+        tarjeta("control", "🔎", f"¡Detectado! <b>{cod}</b> encontró {n} fila(s) que rompen la regla",
+                "La base aceptó el cambio (ningún CHECK mira otras filas o tablas), pero el control lo encontró.",
+                [(cod, True), ("control de integridad", False), (f"{r['rowcount']} fila(s) modificadas", False)],
+                "La regla que revisa el control:", por_codigo[cod].titulo, tabla, r)
+        st.dataframe(r["check"], hide_index=True, width="stretch")
+    else:
+        tarjeta("alerta", "⚠️", f"{cod} devolvió 0 filas", "El control no encontró nada para este caso.", [],
+                tabla=tabla, r=r)
+
+
 with tab_trucho:
-    st.markdown("Todo corre dentro de `begin … rollback`: **la base no cambia**.")
-    a, b = st.columns(2)
+    st.markdown("Elegí un dato trucho y probá guardarlo. Todo corre dentro de `begin … rollback`: "
+                "**la base no cambia**, y al final se cuenta la tabla para demostrarlo.")
+    a, b = st.columns(2, gap="large")
     with a:
         st.subheader("1 · Lo frena el DDL")
         st.caption("PK, FK (simples y compuestas), UNIQUE y CHECK: la base directamente no deja guardarlo.")
+        lugar_ddl = st.empty()
         caso = st.selectbox("Dato trucho", list(FRENADOS_POR_DDL))
         sql = FRENADOS_POR_DDL[caso]
-        st.code(sql, language="sql")
-        if st.button("Intentar guardarlo", type="primary", key="ddl"):
-            r = run_in_rollback([sql])
-            if r["ok"]:
-                st.warning(f"No saltó ninguna restricción ({r['rowcount']} filas afectadas).")
-            else:
-                st.success(f"🛑 La base lo rechazó · restricción **`{r['constraint'] or '—'}`** (SQLSTATE {r['sqlstate']})")
-                st.code(r["error"], language="text")
+        tabla = tabla_de(sql)
+        with st.expander("Ver el SQL que se intenta correr"):
+            st.code(sql, language="sql")
+        if st.button("🚀 Intentar guardarlo", type="primary", key="ddl", width="stretch"):
+            with st.status("Probando el dato trucho…", expanded=True) as stt:
+                paso(stt, "🔓 Abro una transacción (`begin`)")
+                paso(stt, f"✍️ Intento guardar en `{tabla}`: *{caso.lower()}*")
+                r = run_in_rollback([sql], tabla=tabla)
+                if r["ok"]:
+                    paso(stt, "😬 No saltó ninguna restricción")
+                else:
+                    paso(stt, f"🛑 PostgreSQL lo rechazó: `{r['constraint'] or r['sqlstate']}`", 0.6)
+                paso(stt, "↩️ `rollback`: deshago todo")
+                paso(stt, f"🔍 Cuento las filas de `{tabla}`: {miles(r['antes'])} antes, {miles(r['despues'])} después", 0.2)
+                stt.update(label="🛡️ La base se defendió" if not r["ok"] else "⚠️ No hubo error",
+                           state="complete" if not r["ok"] else "error", expanded=False)
+            st.session_state["ultimo_ddl"] = (caso, r, tabla)
+            if not r["ok"]:
+                st.toast(f"Rechazado por **{r['constraint']}**", icon="🛡️")
+            anotar("probados_ddl", caso, len(FRENADOS_POR_DDL),
+                   "¡Probaste todos! La base frenó cada uno de los datos truchos.")
+        ultimo = st.session_state.get("ultimo_ddl")
+        if ultimo and ultimo[0] == caso:  # el resultado queda mientras no cambies de caso
+            mostrar_ddl(*ultimo)
+        marcador(lugar_ddl, "probados_ddl", len(FRENADOS_POR_DDL), "casos frenados por la base")
+
     with b:
         st.subheader("2 · Lo detecta un control")
         st.caption("Reglas que miran otras filas u otras tablas: un CHECK no alcanza, las encuentra el control.")
+        lugar_ctrl = st.empty()
         caso2 = st.selectbox("Dato trucho", list(DETECTADOS_POR_CONTROL))
         cod, sql2 = DETECTADOS_POR_CONTROL[caso2]
-        st.code(sql2, language="sql")
+        tabla2 = tabla_de(sql2)
         st.caption(f"Después corre **{cod}** — {por_codigo[cod].titulo}")
-        if st.button("Romper y correr el control", type="primary", key="ctrl"):
-            r = run_in_rollback([sql2], check_sql=por_codigo[cod].sql)
-            if not r["ok"]:
-                st.error(r["error"])
-            elif len(r["check"]):
-                st.success(f"🔎 {cod} lo encontró: {len(r['check'])} fila(s) que rompen la regla. (Ya se deshizo.)")
-                st.dataframe(r["check"], hide_index=True, width="stretch")
-            else:
-                st.warning(f"{cod} devolvió 0 filas.")
+        with st.expander("Ver el SQL que se intenta correr"):
+            st.code(sql2, language="sql")
+        if st.button("🧪 Romper y correr el control", type="primary", key="ctrl", width="stretch"):
+            with st.status("Rompiendo el dato y buscando el error…", expanded=True) as stt:
+                paso(stt, "🔓 Abro una transacción (`begin`)")
+                paso(stt, f"✍️ Rompo el dato en `{tabla2}`: *{caso2.lower()}*")
+                r = run_in_rollback([sql2], check_sql=por_codigo[cod].sql, tabla=tabla2)
+                if r["ok"]:
+                    paso(stt, f"😶 La base lo aceptó ({r['rowcount']} fila(s)): ninguna restricción mira otras tablas")
+                    n = 0 if r["check"] is None else len(r["check"])
+                    paso(stt, f"🔎 Corro **{cod}**… encontró **{n}** fila(s) que rompen la regla", 0.6)
+                else:
+                    paso(stt, f"🛑 La sentencia dio error: `{r['sqlstate']}`")
+                paso(stt, "↩️ `rollback`: deshago todo")
+                paso(stt, f"🔍 Cuento las filas de `{tabla2}`: {miles(r['antes'])} antes, {miles(r['despues'])} después", 0.2)
+                hallado = r["ok"] and r["check"] is not None and len(r["check"]) > 0
+                stt.update(label=f"🔎 {cod} lo detectó" if hallado else "⚠️ No se detectó",
+                           state="complete" if hallado else "error", expanded=False)
+            st.session_state["ultimo_ctrl"] = (caso2, cod, r, tabla2)
+            if hallado:
+                st.toast(f"**{cod}** encontró el dato roto", icon="🔎")
+            anotar("probados_ctrl", caso2, len(DETECTADOS_POR_CONTROL),
+                   "¡Probaste todos! Cada dato roto lo encontró su control.")
+        ultimo = st.session_state.get("ultimo_ctrl")
+        if ultimo and ultimo[0] == caso2:
+            mostrar_control(*ultimo[1:])
+        marcador(lugar_ctrl, "probados_ctrl", len(DETECTADOS_POR_CONTROL), "casos detectados por un control")
 
 # ------------------------------------------------------------------ ejemplos
 with tab_ej:

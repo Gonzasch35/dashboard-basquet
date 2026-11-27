@@ -97,16 +97,22 @@ def query(sql: str, params: tuple | None = None) -> pd.DataFrame:
     return _query(conninfo(), sql, params)
 
 
-def run_in_rollback(statements: list[str], check_sql: str | None = None) -> dict:
+def run_in_rollback(statements: list[str], check_sql: str | None = None, tabla: str | None = None) -> dict:
     """Corre sentencias dentro de una transaccion que SIEMPRE se deshace.
 
     Sirve para la demo de "datos truchos": devuelve el error (y la restriccion
-    que salto) o, si no hubo error, el resultado de check_sql.
+    que salto) o, si no hubo error, el resultado de check_sql. Si se pasa
+    `tabla`, cuenta sus filas antes y despues del rollback para mostrar que
+    la base quedo igual.
     """
-    out = {"ok": True, "error": None, "constraint": None, "sqlstate": None, "rowcount": 0, "check": None}
+    out = {"ok": True, "error": None, "constraint": None, "sqlstate": None, "rowcount": 0, "check": None,
+           "antes": None, "despues": None}
+    contar = pgsql.SQL("select count(*) from {}").format(pgsql.Identifier(tabla)) if tabla else None
     with connect() as conn:
         try:
             with conn.cursor() as cur:
+                if contar is not None:
+                    out["antes"] = cur.execute(contar).fetchone()[0]
                 for s in statements:
                     cur.execute(s)
                     out["rowcount"] += max(cur.rowcount, 0)
@@ -117,6 +123,9 @@ def run_in_rollback(statements: list[str], check_sql: str | None = None) -> dict
             out.update(ok=False, error=str(e).strip(), sqlstate=e.sqlstate,
                        constraint=getattr(e.diag, "constraint_name", None))
         finally:
+            conn.rollback()
+        if contar is not None:
+            out["despues"] = conn.execute(contar).fetchone()[0]
             conn.rollback()
     return out
 

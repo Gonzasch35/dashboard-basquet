@@ -83,6 +83,14 @@ _CSS = """
     #0e1015;
 }
 [data-testid="stHeader"] { background: transparent; }
+/* menu arriba (NAV_POSICION = "top" en app.py): barra con desenfoque para que no se mezcle al scrollear */
+[data-testid="stHeader"]:has([data-testid="stTopNav"]) {
+  background: rgba(14,16,21,.72); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid #232733;
+}
+[data-testid="stTopNavSection"] { border-radius: 8px; transition: background .18s ease, color .18s ease; }
+[data-testid="stTopNavSection"]:hover { background: rgba(255,138,61,.12); }
+[data-testid="stTopNavSection"]:hover p { color: #ffb36b; }
 
 /* ---------- entrada de la pagina: cada bloque aparece y sube ---------- */
 @keyframes subir { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
@@ -220,6 +228,40 @@ _CSS = """
 .kpi .val.n::after { content: counter(n); }
 .kpi .val.m { counter-reset: k var(--k) u var(--u); }
 .kpi .val.m::after { content: counter(k) "." counter(u, tres); }
+
+/* ---------- tarjeta de resultado de "¿La base se defiende?" ---------- */
+@keyframes pop { 0% { opacity: 0; transform: scale(.92) translateY(8px); } 60% { opacity: 1; transform: scale(1.015); } 100% { transform: none; } }
+@keyframes golpe { 0%,100% { transform: none; } 20% { transform: rotate(-12deg) scale(1.15); } 40% { transform: rotate(10deg) scale(1.1); } 60% { transform: rotate(-6deg); } 80% { transform: rotate(3deg); } }
+@keyframes brillo { 0%,100% { box-shadow: 0 0 0 0 var(--glow); } 50% { box-shadow: 0 0 0 10px transparent; } }
+.resultado {
+  --c: #0aac23; --glow: rgba(10,172,35,.35);
+  position: relative; border-radius: 16px; padding: 18px 20px 16px 76px; margin: 10px 0 8px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--c) 16%, #151821) 0%, #151821 70%);
+  border: 1px solid color-mix(in srgb, var(--c) 55%, #2a2f3c);
+  animation: pop .45s cubic-bezier(.2,.8,.2,1) both, brillo 1.2s ease .45s 1;
+}
+.resultado.control { --c: #338ced; --glow: rgba(51,140,237,.35); }
+.resultado.alerta { --c: #d28e05; --glow: rgba(210,142,5,.35); }
+.resultado .icono { position: absolute; left: 20px; top: 16px; font-size: 2.4rem; animation: golpe .7s ease .25s both; }
+.resultado .titulo { font-size: 1.25rem; font-weight: 800; color: #eceae6; margin: 0 0 4px; }
+.resultado .titulo b { color: var(--c); }
+.resultado .que { color: #c9ccd4; margin: 0 0 10px; }
+.resultado .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.resultado .chip {
+  font-size: .8rem; padding: 3px 10px; border-radius: 999px; color: #eceae6;
+  background: rgba(255,255,255,.06); border: 1px solid #2f3545;
+}
+.resultado .chip.fuerte { color: var(--c); border-color: color-mix(in srgb, var(--c) 60%, #2f3545); font-weight: 700; }
+.resultado .regla { font-size: .8rem; color: #a3a8b4; margin: 2px 0 4px; }
+.resultado code.def {
+  display: block; white-space: pre-wrap; word-break: break-word; font-size: .82rem; padding: 8px 10px;
+  background: #0f1117; border: 1px solid #262b37; border-radius: 8px; color: #ffd2ad;
+}
+.resultado .igual { margin-top: 10px; font-size: .9rem; color: #c9ccd4; }
+.resultado .igual b { color: #eceae6; font-variant-numeric: tabular-nums; }
+.marcador { display: flex; align-items: center; gap: 10px; margin: 2px 0 12px; color: #a3a8b4; font-size: .9rem; }
+.marcador .barra { flex: 1; height: 8px; border-radius: 8px; background: #1f2430; overflow: hidden; }
+.marcador .barra > span { display: block; height: 100%; border-radius: 8px; background: linear-gradient(90deg, #ff8a3d, #ffc15e); transition: width .6s cubic-bezier(.2,.8,.2,1); }
 
 /* ---------- respeta a quien pidio menos movimiento ---------- */
 @media (prefers-reduced-motion: reduce) {

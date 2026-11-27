@@ -25,7 +25,9 @@ paginas = {
         st.Page("views/estadistica.py", title="Análisis estadístico", icon="📈"),
     ],
 }
-nav = st.navigation(paginas)
+# "top" = menu arriba (cada seccion es un desplegable); "sidebar" = menu en la barra lateral
+NAV_POSICION = "sidebar"
+nav = st.navigation(paginas, position=NAV_POSICION)
 
 # ---------------------------------------------------------------- sidebar
 with st.sidebar:
