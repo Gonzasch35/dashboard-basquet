@@ -3,18 +3,19 @@ import streamlit as st
 
 from lib.db import TABLAS, query
 from lib.liga import CATEGORIAS, partidos
-from lib.ui import COLOR_CAT, chart, encabezado, requiere_base
+from lib.ui import ACENTO, COLOR_CAT, SERIES, chart, hero, kpis, requiere_base
 
-encabezado("Liga de Básquet Formativo de Paraná",
-           "Un tablero para recorrer la temporada 2026 de una liga de básquet juvenil, guardada en una base de datos")
+hero("Liga de Básquet Formativo de Paraná",
+     "Un tablero para recorrer la temporada 2026 de una liga de básquet juvenil, guardada en una base de datos")
 requiere_base()
 
 # ------------------------------------------------------------ que es esto
 st.markdown("""
 ### ¿Qué es esto?
 
-Una **liga de básquet formativo** es una liga para chicos y chicas que están aprendiendo a jugar.
-Esta tiene **12 clubes de Paraná**, y cada club tiene **4 equipos**, uno por edad:
+Una **liga de básquet formativo** es una liga para chicos que están aprendiendo a jugar.
+Esta tiene **12 clubes de Paraná**, y cada club tiene **4 equipos**, uno por edad.
+**Todos los datos de este tablero son de la temporada 2026.**
 
 | Categoría | Edades en 2026 | Quiere decir |
 |---|---|---|
@@ -32,6 +33,8 @@ Toda esa información está guardada en una **base de datos** (PostgreSQL): un c
 entre sí, como planillas de cálculo que se referencian unas a otras. Este tablero le hace preguntas a esa base
 y muestra las respuestas con tablas y gráficos.
 """)
+st.info("**Todo lo que vas a ver corresponde a la temporada 2026:** torneos Apertura y Clausura, "
+        "con sus partidos, jugadores, árbitros y estadísticas.", icon="📅")
 
 with st.expander("📖 Glosario: palabras que aparecen en el tablero"):
     st.markdown("""
@@ -62,22 +65,24 @@ def miles(n):
     return f"{int(n):,}".replace(",", ".")
 
 
-c = st.columns(6)
-c[0].metric("Clubes", filas["club"])
-c[1].metric("Equipos", filas["equipo"], help="12 clubes × 4 categorías")
-c[2].metric("Jugadores", filas["jugador"], help="16 por equipo")
-c[3].metric("Partidos jugados", filas["partido"])
-c[4].metric("Entrenadores", filas["entrenador"])
-c[5].metric("Árbitros", filas["arbitro"])
-
-c = st.columns(6)
-c[0].metric("Torneos", filas["torneo"], help="Apertura y Clausura × 4 categorías")
-c[1].metric("Series de playoff", filas["serie"])
-c[2].metric("W.O. (no se presentaron)", int(p.wo.sum()))
-c[3].metric("Partidos postergados", int(p.fecha_original.notna().sum()))
-c[4].metric("Pases entre clubes", filas["pase"])
-c[5].metric("Planillas de jugadores", miles(filas["estadistica"]),
-            help="Una fila por cada jugador en cada partido: minutos, puntos, rebotes, etc.")
+# los numeros cuentan desde 0 al aparecer (solo la animacion; los valores son los de la base)
+kpis([
+    ("🏟️", "Clubes", filas["club"], "Los 12 clubes de Paraná", ACENTO),
+    ("👕", "Equipos", filas["equipo"], "12 clubes × 4 categorías", ACENTO),
+    ("⛹️", "Jugadores", filas["jugador"], "16 por equipo", ACENTO),
+    ("🏀", "Partidos jugados", filas["partido"], "Fase regular + playoff de los 8 torneos", ACENTO),
+    ("📋", "Entrenadores", filas["entrenador"], "Uno por equipo", ACENTO),
+    ("🧑‍⚖️", "Árbitros", filas["arbitro"], "Nacionales, provinciales y aspirantes", ACENTO),
+])
+kpis([
+    ("🏆", "Torneos", filas["torneo"], "Apertura y Clausura × 4 categorías", SERIES[0]),
+    ("⚔️", "Series de playoff", filas["serie"], "Cuartos y semis, al mejor de 3", SERIES[0]),
+    ("🚫", "W.O. (no se presentaron)", int(p.wo.sum()), "Partidos que terminaron 20 a 0 por ausencia", SERIES[0]),
+    ("📅", "Partidos postergados", int(p.fecha_original.notna().sum()), "Pasados a otro día", SERIES[0]),
+    ("🔁", "Pases entre clubes", filas["pase"], "Entre el Apertura y el Clausura", SERIES[0]),
+    ("📊", "Planillas de jugadores", filas["estadistica"],
+     "Una fila por cada jugador en cada partido: minutos, puntos, rebotes, etc.", SERIES[0]),
+])
 
 st.divider()
 izq, der = st.columns([3, 2])
@@ -105,9 +110,9 @@ with izq:
 with der:
     st.subheader("Cuántos datos hay en cada tabla")
     fig = px.bar(conteos.sort_values("filas"), x="filas", y="tabla", orientation="h", log_x=True,
-                 text="filas", color_discrete_sequence=["#2a78d6"])
+                 text="filas", color_discrete_sequence=[SERIES[0]])
     fig.update_traces(textposition="outside", cliponaxis=False)
-    fig.update_layout(height=520, xaxis_title="filas (escala logarítmica)", yaxis_title=None)
+    fig.update_layout(height=520, xaxis_title="filas (escala logarítmica)", yaxis_title=None, margin_r=60)
     chart(fig)
     st.caption(f"En total hay {miles(conteos.filas.sum())} filas en 14 tablas. La escala es logarítmica "
                "porque las tablas van de 4 filas (categorías) a más de 15.000 (estadísticas).")

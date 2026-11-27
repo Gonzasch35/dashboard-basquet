@@ -9,7 +9,7 @@ from statsmodels.stats.multicomp import pairwise_tukeyhsd
 from statsmodels.stats.proportion import proportion_confint
 
 from lib.liga import CATEGORIAS, TORNEOS, estadisticas_jugadores, id_torneo, partidos, tabla_fiba
-from lib.ui import COLOR_CAT, DIVERGENTE, chart, encabezado, requiere_base
+from lib.ui import COLOR_CAT, DIVERGENTE, NEUTRO, TEXTO, chart, encabezado, requiere_base
 
 encabezado("Análisis estadístico", "Preguntas sobre la temporada 2026 respondidas con pruebas estadísticas",
            """
@@ -64,12 +64,12 @@ with t1:
     r = pd.DataFrame(filas)
     fig = go.Figure()
     fig.add_bar(x=r.categoria, y=r.proporcion * 100,
-                marker_color=[COLOR_CAT.get(c, "#52514e") for c in r.categoria],
+                marker_color=[COLOR_CAT.get(c, NEUTRO) for c in r.categoria],
                 error_y=dict(type="data", symmetric=False, array=(r.ic_sup - r.proporcion) * 100,
-                             arrayminus=(r.proporcion - r.ic_inf) * 100, color="#52514e"),
+                             arrayminus=(r.proporcion - r.ic_inf) * 100, color=TEXTO),
                 text=(r.proporcion * 100).round(1).astype(str) + "%", textposition="outside",
                 hovertemplate="%{x}: %{y:.1f}%<extra></extra>")
-    fig.add_hline(y=50, line_dash="dot", line_color="#8a8983", annotation_text="50% (sin ventaja)")
+    fig.add_hline(y=50, line_dash="dot", line_color=NEUTRO, annotation_text="50% (sin ventaja)")
     fig.update_layout(height=380, yaxis_title="% ganados por el local", yaxis_range=[0, 100],
                       title=f"% de partidos ganados por el local (la rayita es el margen de error, "
                             f"al {int((1 - ALFA) * 100)}%)")

@@ -3,7 +3,7 @@ import streamlit as st
 
 from lib.db import query
 from lib.liga import CATEGORIAS, TORNEOS, evolucion_posiciones, id_torneo, partidos, tabla_fiba
-from lib.ui import SERIES, chart, encabezado, requiere_base
+from lib.ui import APAGADO, SERIES, chart, encabezado, requiere_base
 
 encabezado("Posiciones y playoff", "Cómo terminó cada torneo de 2026: la tabla, cómo se fue armando y el playoff",
            """
@@ -48,14 +48,14 @@ with tab_evol:
                                 max_selections=len(SERIES))
     colores = {e: SERIES[i] for i, e in enumerate(destacados)}
     fig = px.line(ev, x="fecha", y="pos", color="equipo", markers=True,
-                  color_discrete_map={e: colores.get(e, "#d4d3cd") for e in ev.equipo.unique()},
+                  color_discrete_map={e: colores.get(e, APAGADO) for e in ev.equipo.unique()},
                   hover_data={"pts": True})
     for tr in fig.data:
         if tr.name not in colores:
             tr.update(line_width=1, marker_size=4, showlegend=False, opacity=0.6)
     fig.update_yaxes(autorange="reversed", dtick=1, title="posición")
     fig.update_xaxes(dtick=1, title="fecha")
-    fig.add_hrect(y0=8.5, y1=12.5, fillcolor="#f3f2ee", line_width=0, layer="below")
+    fig.add_hrect(y0=8.5, y1=12.5, fillcolor="rgba(255,255,255,0.05)", line_width=0, layer="below")
     fig.update_layout(height=480, title="Cómo se fue armando la tabla fecha a fecha")
     chart(fig)
     st.caption("La franja gris son los puestos que quedan afuera del playoff (9° a 12°).")
@@ -81,7 +81,7 @@ with tab_playoff:
             juegos = po[po.id_serie == s.id_serie].sort_values("nro_partido_serie")
             res = "  \n".join(f"P{int(j.nro_partido_serie)}: {j.local.rsplit(' ', 1)[0]} {j.puntos_local}–"
                               f"{j.puntos_visitante} {j.visitante.rsplit(' ', 1)[0]}" for j in juegos.itertuples())
-            with col.container(border=True):
+            with col.container(border=True, key=f"serie_{s.id_serie}"):  # key -> clase CSS st-key-serie_*
                 st.markdown(f"**{s.mejor}** vs {s.peor}  \n{res}  \n➡️ **{s.ganador}**")
     st.caption("Cuartos y semis al mejor de 3 (el mejor ubicado es local en el 1 y el 3). Final a un partido en cancha neutral.")
 

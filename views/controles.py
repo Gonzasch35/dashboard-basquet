@@ -29,6 +29,15 @@ controles = [b for b in bloques if b.codigo.startswith("C")]
 ejemplos = [b for b in bloques if b.codigo.startswith("E")]
 por_codigo = {b.codigo: b for b in bloques}
 
+# C3, C6 y C9 traen en el titulo la nota "Ahora lo FRENA el DDL ..." (03_controles.sql):
+# se saca del titulo para que la tabla no quede enorme y se marca con 🛡️
+NOTA_DDL = " Ahora lo FRENA el DDL"
+frena_ddl = set()
+for b in bloques:
+    if NOTA_DDL in b.titulo:
+        b.titulo = b.titulo.split(NOTA_DDL)[0].strip()
+        frena_ddl.add(b.codigo)
+
 tab_ctrl, tab_trucho, tab_ej = st.tabs(["Correr los controles", "¿La base se defiende?", "Consultas de ejemplo"])
 
 # ------------------------------------------------------------------ controles
@@ -43,7 +52,8 @@ with tab_ctrl:
             n, err = -1, str(e)
         informativo = b.codigo == "C30"
         estado = "ℹ️ informativo" if informativo else ("✅ 0 filas" if n == 0 else ("⚠️ error" if n < 0 else f"❌ {n} filas"))
-        filas.append(dict(control=b.codigo, seccion=b.seccion.title(), regla=b.titulo, resultado=estado, filas=n, error=err))
+        regla = ("🛡️ " if b.codigo in frena_ddl else "") + b.titulo
+        filas.append(dict(control=b.codigo, seccion=b.seccion.title(), regla=regla, resultado=estado, filas=n, error=err))
     res = pd.DataFrame(filas)
     reglas = res[res.control != "C30"]
     ok = int((reglas.filas == 0).sum())
@@ -55,8 +65,17 @@ with tab_ctrl:
         st.success("Todas las reglas se cumplen: los 29 controles devuelven 0 filas.")
     else:
         st.error("Hay controles que encontraron filas que rompen la regla.")
-    st.dataframe(res[["control", "seccion", "regla", "resultado"]], hide_index=True, width="stretch", height=560,
-                 column_config={"regla": st.column_config.TextColumn(width="large")})
+    # anchos fijos (en px): con width="stretch" el espacio sobrante se repartia parejo y "resultado"
+    # quedaba ancha mientras "regla" se cortaba. "regla" mide lo justo para el titulo mas largo.
+    st.dataframe(res[["control", "seccion", "regla", "resultado"]], hide_index=True, width="content", height=560,
+                 column_config={
+                     "control": st.column_config.TextColumn(width=65),
+                     "seccion": st.column_config.TextColumn("sección", width=190),
+                     "regla": st.column_config.TextColumn(width=800),
+                     "resultado": st.column_config.TextColumn(width=110),
+                 })
+    st.caption("🛡️ = regla que ya frena el DDL (FK compuestas que comparten `id_categoria`); "
+               "el control queda como doble chequeo y tiene que dar siempre 0 filas.")
 
     sel = st.selectbox("Ver el SQL de un control", [b.codigo for b in controles],
                        format_func=lambda k: f"{k} — {por_codigo[k].titulo}")

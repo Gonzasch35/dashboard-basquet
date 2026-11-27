@@ -56,18 +56,31 @@ Tres formas (se usa la primera que encuentre):
 Si la base `liga_basquet` no existe o está vacía, el botón **Crear / recargar base** la crea y carga los
 datos de 2026 (corre `sql/01_ddl_liga_basquet.sql` y `sql/02_dml_carga_datos.sql`; tarda menos de un segundo).
 
+## Diseño para la presentación
+
+- **Modo oscuro** (`.streamlit/config.toml`): fondo casi negro, texto claro y el naranja de la pelota como acento.
+  Los gráficos usan los mismos colores de siempre por categoría (U13 azul, U15 naranja, U17 verde agua,
+  U19 amarillo), con el tono ajustado para fondo oscuro.
+- **Efectos** (`lib/ui.py`): portada con la pelota picando sobre las líneas de una cancha, números que cuentan
+  desde 0, tarjetas que se levantan al pasar el mouse, bloques que aparecen al entrar a cada página y
+  gráficos que se mueven suave al cambiar un filtro. Si la compu tiene activado "reducir movimiento", se apagan.
+- **🔍 Letra grande (para proyectar)**: interruptor en la barra lateral que agranda el texto de las páginas y de
+  los gráficos para que se lea desde el fondo del aula.
+
+Los datos y las consultas no cambian: es solo cómo se ven.
+
 ## Archivos
 
 ```
 app-dashboard/
 ├── app.py                      # punto de entrada, menú y barra lateral
 ├── assets/
-│   └── diagrama_tablas.png     # diagrama de tablas
+│   └── diagrama.png            # diagrama de tablas (versión final, con id_categoria)
 ├── lib/
 │   ├── db.py                   # conexión, consultas y carga de la base
 │   ├── liga.py                 # consultas de la liga y tabla con desempate FIBA
 │   ├── sqlfiles.py             # separa 03_controles.sql en bloques (C1, C2, … E1, …)
-│   └── ui.py                   # colores, gráficos y encabezado de cada página
+│   └── ui.py                   # modo oscuro, efectos (CSS), colores de gráficos y encabezados
 ├── views/                      # una página por archivo
 ├── sql/
 │   ├── 01_ddl_liga_basquet.sql      # crea las 14 tablas (versión final, con id_categoria en plantel/pase/partido)
