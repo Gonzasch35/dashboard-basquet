@@ -3,7 +3,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from lib.liga import CATEGORIAS, estadisticas_jugadores
-from lib.ui import COLOR_CAT, SERIES, chart, encabezado, requiere_base
+from lib.ui import COLOR_CAT, NEUTRO, SERIES, chart, encabezado, requiere_base
 
 encabezado("Jugadores", "Quiénes se destacaron en 2026 y cómo le fue a cada uno partido a partido",
            """
@@ -73,7 +73,7 @@ with tab_perfil:
                 customdata=log[["fase", "equipo"]], hovertemplate="%{x|%d/%m}: %{y} pts<br>%{customdata[0]}<extra></extra>")
     fig.add_scatter(x=log.fecha, y=log.puntos.rolling(5, min_periods=1).mean(), name="promedio móvil (5)",
                     line=dict(color=SERIES[1]), mode="lines")
-    fig.add_hline(y=prom_cat, line_dash="dot", line_color="#8a8983",
+    fig.add_hline(y=prom_cat, line_dash="dot", line_color=NEUTRO,
                   annotation_text=f"promedio {j.categoria}: {prom_cat:.1f}", annotation_position="top left")
     fig.update_layout(height=380, title="Puntos partido a partido", yaxis_title=None, xaxis_title=None)
     chart(fig)

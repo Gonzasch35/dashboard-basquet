@@ -28,7 +28,7 @@ En el diagrama, esas conexiones son las **flechas**.
 requiere_base()
 
 st.subheader("Diagrama de tablas")
-st.image(str(APP_DIR / "assets" / "diagrama_tablas.png"), width="stretch")
+st.image(str(APP_DIR / "assets" / "diagrama.png"), width="stretch")
 st.caption("Cada caja es una tabla con sus columnas y su tipo de dato (INT = número entero, VARCHAR = texto, "
            "DATE = fecha, TIME = hora, SERIAL = número que la base pone sola). Las flechas van desde la FK "
            "hasta la tabla a la que apunta.")

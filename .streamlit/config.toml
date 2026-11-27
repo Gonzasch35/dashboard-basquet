@@ -1,9 +1,28 @@
+# Tema oscuro pensado para proyectar en la defensa: fondo casi negro, texto claro
+# y el naranja de la pelota como color de acento. Los colores de los graficos
+# (U13 azul, U15 naranja, U17 verde agua, U19 amarillo) estan en lib/ui.py.
 [theme]
-base = "light"
-primaryColor = "#2a78d6"
-backgroundColor = "#fcfcfb"
-secondaryBackgroundColor = "#f3f2ee"
-textColor = "#0b0b0b"
+base = "dark"
+primaryColor = "#ff8a3d"
+backgroundColor = "#0e1015"
+secondaryBackgroundColor = "#1b1f2a"
+textColor = "#eceae6"
+linkColor = "#ffb36b"
+borderColor = "#2a2f3c"
+dataframeBorderColor = "#2a2f3c"
+dataframeHeaderBackgroundColor = "#1b1f2a"
+codeBackgroundColor = "#151821"
+baseRadius = "12px"
+buttonRadius = "10px"
+headingFontWeights = [800, 700, 700, 600, 600, 600]
+metricValueFontWeight = 800
+showWidgetBorder = true
+chartCategoricalColors = ["#338ced", "#e76624", "#00a888", "#d28e05", "#e24d8b", "#0aac23", "#9887ef", "#eb6263"]
+
+[theme.sidebar]
+backgroundColor = "#12141b"
+secondaryBackgroundColor = "#1b1f2a"
+borderColor = "#232733"
 
 [client]
 # sin el menu de arriba a la derecha ni el boton Deploy

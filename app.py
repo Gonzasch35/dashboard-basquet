@@ -5,7 +5,7 @@ Integrantes:  Tomiozzo Franco y Schmidt Gonzalo
 """
 import streamlit as st
 
-from lib import db
+from lib import db, ui
 
 st.set_page_config(page_title="Liga de Básquet Formativo 2026", page_icon="🏀", layout="wide",
                    menu_items={"Get help": None, "Report a bug": None, "About": None})
@@ -31,6 +31,8 @@ nav = st.navigation(paginas)
 with st.sidebar:
     st.markdown("### 🏀 Temporada **2026**")
     st.caption("Todos los datos que se muestran son de la temporada 2026 (Apertura y Clausura).")
+    st.toggle("🔍 Letra grande (para proyectar)", key="letra_grande",
+              help="Agranda el texto de las páginas y de los gráficos para que se lea desde lejos.")
     cfg = db.get_config()
     ok, msg = db.ping()
     st.markdown(("🟢 Conectado a la base" if ok else "🔴 Sin conexión a la base") +
@@ -61,4 +63,5 @@ with st.sidebar:
     st.divider()
     st.caption("TP Final · Base de Datos · FIUNER\n\nTomiozzo Franco · Schmidt Gonzalo")
 
+ui.estilos()  # modo oscuro + efectos (despues del toggle de letra grande)
 nav.run()
